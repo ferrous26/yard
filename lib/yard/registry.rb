@@ -70,9 +70,9 @@ module YARD
       # @return [String] the yardoc filename
       # @see DEFAULT_YARDOC_FILE
       attr_accessor :yardoc_file
-      def yardoc_file=(v) Thread.current[:__yard_yardoc_file__] = v end
+      def yardoc_file=(v) thread_object[:__yard_yardoc_file__] = v end
       def yardoc_file
-        Thread.current[:__yard_yardoc_file__] ||= DEFAULT_YARDOC_FILE
+        thread_object[:__yard_yardoc_file__] ||= DEFAULT_YARDOC_FILE
       end
 
       # @group Loading Data from Disk
@@ -321,8 +321,8 @@ module YARD
       # @return [Boolean, nil] if this value is set to nil, the storage
       #   adapter will decide how to store the data.
       attr_accessor :single_object_db
-      def single_object_db=(v) Thread.current[:__yard_single_db__] = v end
-      def single_object_db; Thread.current[:__yard_single_db__] end
+      def single_object_db=(v) thread_object[:__yard_single_db__] = v end
+      def single_object_db; thread_object[:__yard_single_db__] end
 
       # The assumed types of a list of paths. This method is used by CodeObjects::Base
       # @return [{String => Symbol}] a set of unresolved paths and their assumed type
@@ -338,6 +338,13 @@ module YARD
       # @deprecated use Registry.methodname directly.
       # @return [Registry] returns the registry instance
       def instance; self end
+      
+      # Locks the registry across all threads so that multiple threads can share lookup operations
+      def lock(&block)
+        @@thread_object = Thread.current
+        yield
+        @@thread_object = nil
+      end
 
       private
 
@@ -388,13 +395,19 @@ module YARD
 
       # @since 0.6.5
       def thread_local_store
-        Thread.current[:__yard_registry__] ||= clear
+        thread_object[:__yard_registry__] ||= clear
       end
 
       # @since 0.6.5
       def thread_local_store=(value)
-        Thread.current[:__yard_registry__] = value
+        thread_object[:__yard_registry__] = value
       end
+      
+      def thread_object
+        @@thread_object || Thread.current
+      end
+      
+      @@thread_object = nil
     end
   end
 end

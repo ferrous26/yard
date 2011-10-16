@@ -13,13 +13,25 @@ def init
   options.delete(:objects)
   options.delete(:files)
   
-  objects.each do |object| 
-    begin
-      serialize(object)
-    rescue => e
-      path = options[:serializer].serialized_path(object)
-      log.error "Exception occurred while generating '#{path}'"
-      log.backtrace(e)
+  Registry.lock do
+    num_thr = 2
+    threads = []
+    objects.each_slice(objects.size / num_thr) do |objs|
+      threads << Thread.new do
+        objs.each do |object|
+          begin
+            #p "#{Process.pid} parsing #{object}"
+            serialize(object)
+          rescue => e
+            path = options[:serializer].serialized_path(object)
+            log.error "Exception occurred while generating '#{path}'"
+            log.backtrace(e)
+          end
+        end
+      end
+    end
+    while threads.any? {|t| t.alive? }
+      Thread.stop
     end
   end
 end
