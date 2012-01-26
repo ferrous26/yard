@@ -162,7 +162,18 @@ module YARD
         self.factory = factory
       end
 
+      # @macro [attach] yard.tag
+      #   @method $2_tag
+      #   @visibility private
+      #   @yard.tag $2 [$3] $1
+      # 
+      # Defines the abstract tag
+      # 
+      # @example
+      #   # @abstract
+      #   class Foo; end
       define_tag "Abstract",           :abstract
+      
       define_tag "API Visibility",     :api
       define_tag "Attribute (macro)",  :attribute,   :with_types
       define_tag "Attribute",          :attr,        :with_types_and_name
